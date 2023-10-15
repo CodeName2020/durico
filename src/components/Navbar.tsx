@@ -1,11 +1,11 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { auth } from '../../firebase'
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { auth, db } from '../../firebase'
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
 import { LogoSvg } from './Svg'
-import Image from 'next/image'
-import userAvater from '../../public/ytt.png'
+import { collection, getDocs } from 'firebase/firestore'
+import firebase from 'firebase/compat/app'
 
 const Navbar = () => {
   const googleProvider = new GoogleAuthProvider();
@@ -15,6 +15,9 @@ const Navbar = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const [userOr, setUserOr] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [fireData, setFireData] = useState<any[]>([]);
+  const dbRef = collection(db, 'User');
 
   // const [error, setError] = useState(true);
 
@@ -24,6 +27,14 @@ const Navbar = () => {
       setUserOr(token !== null)
     }
   }, [userOr])
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setUser(user);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const signUp = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -72,42 +83,59 @@ const Navbar = () => {
     setEmail('')
     setPassword('')
     setChecked(false)
+    auth.signOut().then(() => {
+      setUser(null as User | null); // Set user to null when logged out
+    }).catch(error => {
+      console.error('Error signing out:', error);
+    });
     router.push('/')
   }
+
+  useEffect(() => {
+    const getData = async () => {
+
+      const querySnapshot = await getDocs(dbRef);
+      const data = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))
+      setFireData(data);
+    }
+    getData();
+  }, [dbRef])
+
+  const currentUser = auth.currentUser;
+  const loggedInUserId = currentUser ? currentUser.uid : null;
+  const loggedInUser = fireData.find(user => user.id === loggedInUserId);
 
   return (
     <div className='flex justify-between p-2 items-center border-yellow-500 border-b-2'>
       <LogoSvg />
       <div className='flex flex-col space-y-4'>
-        {userOr ? (
-          <div className='btn btn-primary text-white rounded-3xl px-1'>
-            <label htmlFor="my_modal_1">
-              <div className='mx-2'>
-                Log In
-              </div>
-            </label>
-            <div className='dropdown dropdown-end'>
-              <label tabIndex={0}>
-                <div className='w-9 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2'>
-                  <Image
-                    src={userAvater}
-                    alt={'Authorized image'}
-                    priority
-                  />
+        {loggedInUser ? (
+              <div key={loggedInUser.id} className='btn btn-primary text-white rounded-3xl px-1'>
+                <label htmlFor="my_modal_1">
+                  <div className='mx-2'>
+                    {loggedInUser.username}
+                  </div>
+                </label>
+                <div className='dropdown dropdown-end'>
+                  <div>
+                    <label tabIndex={0}>
+                      {loggedInUser.user_img && (
+                        <img src={loggedInUser.user_img} alt="Uploaded Farm Photo" className='w-[38px] h-[38px] rounded-full ring ring-primary ring-offset-base-100 ring-offset-2' />
+                      )}
+                    </label>
+                  </div>
+                  <ul tabIndex={0} className="menu menu-sm dropdown-content mt-4 z-[1] p-2 shadow bg-base-100 rounded-box w-52 text-black font-light normal-case">
+                    <li>
+                      <a className="justify-between">
+                        Profile
+                        <span className="badge">New</span>
+                      </a>
+                    </li>
+                    <li><a>Settings</a></li>
+                    <li onClick={(logout)}><a>Log Out</a></li>
+                  </ul>
                 </div>
-              </label>
-              <ul tabIndex={0} className="menu menu-sm dropdown-content mt-4 z-[1] p-2 shadow bg-base-100 rounded-box w-52 text-black font-light normal-case">
-                <li>
-                  <a className="justify-between">
-                    Profile
-                    <span className="badge">New</span>
-                  </a>
-                </li>
-                <li><a>Settings</a></li>
-                <li onClick={logout}><a>Log Out</a></li>
-              </ul>
-            </div>
-          </div>
+              </div>
         ) : (
           <div className='btn btn-primary text-white rounded-3xl px-1'>
             <label htmlFor="my_modal_1">
@@ -151,3 +179,5 @@ const Navbar = () => {
 }
 
 export default Navbar
+
+

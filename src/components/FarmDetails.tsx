@@ -4,6 +4,7 @@ import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase
 import { db, storage } from '../../firebase'
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api'
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage'
+import Link from 'next/link'
 
 const FarmDetails = () => {
     const [farm_name, setFarm_name] = useState('')
@@ -17,11 +18,14 @@ const FarmDetails = () => {
     const [farm_space, setFarm_space] = useState<Number | null>(null)
     const [durian_amount, setDurian_amount] = useState<Number | null>(null)
     const [clickedLatLng, setClickedLatLng] = useState({ lat: null, lng: null });
+    const [mapCenter, setMapCenter] = useState({ lat: 13.7563, lng: 100.5018 })
     const [modalOpen, setModalOpen] = useState(false);
     const [fireData, setFireData] = useState<any[]>([])
     const [isUpdate, setIsUpdate] = useState(false)
     const [ID, setID] = useState('')
     const [loading, setLoading] = useState(false);
+    const [filter, setFilter] = useState('');
+    const [searchInput, setSearchInput] = useState('');
 
     const dbRef = collection(db, 'Farm');
 
@@ -95,6 +99,7 @@ const FarmDetails = () => {
         const lat = e.latLng.lat();
         const lng = e.latLng.lng();
         setClickedLatLng({ lat, lng });
+        setMapCenter({ lat, lng })
 
         const modalCheckbox = document.getElementById("my_modal_2") as HTMLInputElement;
         if (modalCheckbox) {
@@ -105,11 +110,6 @@ const FarmDetails = () => {
     const mapStyles = {
         height: "50vh",
         width: "100%"
-    }
-
-    const defaultCenter = {
-        lat: 13.7563,
-        lng: 100.5018
     }
 
     useEffect(() => {
@@ -241,13 +241,45 @@ const FarmDetails = () => {
             )
     }
 
+    const filteredData = fireData.slice().sort((a, b) => {
+        if (filter === 'จากผลผลิตที่มาก') {
+            return b.durian_amount - a.durian_amount;
+        } else if (filter === 'จากผลผลิตที่น้อย') {
+            return a.durian_amount - b.durian_amount;
+        }
+        return 0;
+    });
+
+    const filteredByStatus = filter === 'พร้อมที่จะเก็บ' ? filteredData.filter(data => data.farm_status)
+        : filter === 'ยังไม่พร้อมที่จะเก็บ' ? filteredData.filter(data => !data.farm_status) : filteredData;
+
+    const filteredByStatusAndSearch = filteredByStatus.filter(data => {
+        const searchString = searchInput.toLowerCase();
+        const farmName = data.farm_name.toLowerCase();
+        const farmLocation = data.farm_location.toLowerCase();
+        const farmProvince = data.farm_province.toLowerCase();
+        const farmDurianSpecies = data.farm_durian_species.toLowerCase();
+
+        return (
+            farmName.includes(searchString) ||
+            farmLocation.includes(searchString) ||
+            farmProvince.includes(searchString) ||
+            farmDurianSpecies.includes(searchString)
+        );
+    });
+
     return (
         <div className='space-y-2'>
             <div className='flex justify-center'>
                 <div className="join">
                     <div>
                         <div>
-                            <input className="input input-bordered join-item w-[20rem]" placeholder="Search" />
+                            <input
+                                className="input input-bordered join-item w-[20rem]"
+                                placeholder="Search"
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                            />
                         </div>
                     </div>
                     <div className="indicator">
@@ -259,49 +291,50 @@ const FarmDetails = () => {
             </div>
             <div className='flex justify-end'>
                 <div>
-                    <select className="select select-bordered join-item" defaultValue='Filter'>
-                        <option disabled>Filter</option>
-                        <option>Sci-fi</option>
-                        <option>Drama</option>
-                        <option>Action</option>
+                    <select className="select select-bordered join-item"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}>
+                        <option>จัดเรียงตาม</option>
+                        <option>พร้อมที่จะเก็บ</option>
+                        <option>ยังไม่พร้อมที่จะเก็บ</option>
+                        <option>จากผลผลิตที่มาก</option>
+                        <option>จากผลผลิตที่น้อย</option>
                     </select>
                 </div>
             </div>
             <div className='flex flex-row gap-2'>
-                <div className='grid grid-cols-2 gap-2'>
-                    {fireData.map((data) => {
+                <div className='grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-6'>
+                    {filteredByStatusAndSearch.map((data) => {
                         return (
-                            <div key={data.id}>
-                                <div className="card bg-base-100 shadow-xl">
-                                    <figure>
-                                        {data.farm_photo && (
-                                            <img src={data.farm_photo} alt="Uploaded Farm Photo" />
-                                        )}
-                                    </figure>
-                                    <div className="card-body -m-6">
-                                        <div className='text-center'>
-                                            <div className='text-md font-semibold'>ฟาร์มทุเรียน{data.farm_name}</div>
-                                            <p>{data.farm_location}, จังหวัด{data.farm_province}, ทุเรียนพันธุ์{data.farm_durian_species} จำนวนทุเรียนวันนี้ {data.durian_amount} ลูก</p>
-                                        </div>
-                                        <div className="card-actions justify-end border-t-2 border-gray-100 pt-1">
-                                            <button onClick={() => deleteDocument(data.id)}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" strokeWidth="2" className="w-6 h-6 stroke-error">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                                </svg>
-                                            </button>
-                                            <button onClick={() => {
-                                                getID(data.id, data.farm_name, data.farm_location, data.farm_province, data.farm_durian_species,
-                                                    data.farm_tree, data.farm_space, data.durian_amount, data.farm_status)
-                                            }}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" strokeWidth="2" className="w-6 h-6 stroke-success">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                                </svg>
-                                            </button>
-
+                            <Link href={`/detail/${data.farm_name}`} key={data.id}>
+                                <div className="flex flex-col h-full">
+                                    <div className="card bg-base-100 shadow-xl flex-1">
+                                        <figure>
+                                            {data.farm_photo && (
+                                                <img src={data.farm_photo} alt="Uploaded Farm Photo" />
+                                            )}
+                                        </figure>
+                                        <div className="card-body -mb-6 -mx-4">
+                                            <div className='text-center h-full'>
+                                                <div className='text-md font-semibold'>ฟาร์มทุเรียน{data.farm_name}</div>
+                                                <p>{data.farm_location}, จังหวัด{data.farm_province}, ทุเรียนพันธุ์{data.farm_durian_species} จำนวนทุเรียนวันนี้ {data.durian_amount} ลูก</p>
+                                            </div>
+                                            <div className="card-actions justify-end border-t-2 border-gray-100 pt-2">
+                                                <button onClick={() => deleteDocument(data.id)}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" strokeWidth="2" className="w-6 h-6 stroke-error">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                    </svg>
+                                                </button>
+                                                <button onClick={() => { getID(data.id, data.farm_name, data.farm_location, data.farm_province, data.farm_durian_species, data.farm_tree, data.farm_space, data.durian_amount, data.farm_status) }}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" strokeWidth="2" className="w-6 h-6 stroke-success">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         )
                     })}
                 </div>
@@ -386,10 +419,12 @@ const FarmDetails = () => {
                                                 <GoogleMap
                                                     mapContainerStyle={mapStyles}
                                                     zoom={5}
-                                                    center={defaultCenter}
+                                                    center={mapCenter}
                                                     onClick={handleMapClick}
                                                 >
-                                                    <Marker position={defaultCenter} />
+                                                    {clickedLatLng.lat !== null && clickedLatLng.lng !== null && (
+                                                        <Marker position={{ lat: clickedLatLng.lat, lng: clickedLatLng.lng }} />
+                                                    )}
                                                 </GoogleMap>
                                             </LoadScript>
                                         </div>

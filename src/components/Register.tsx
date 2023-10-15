@@ -49,7 +49,7 @@ const Register = () => {
                     () => {
                         getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
                             console.log('File available at', downloadURL);
-                            const userRef = doc(db, 'user', user.uid);
+                            const userRef = doc(db, 'User', user.uid);
 
                             await setDoc(userRef, {
                                 email,
@@ -88,7 +88,7 @@ const Register = () => {
             const photoURL = user.photoURL;
             const email = user.email;
     
-            const userRef = doc(db, 'user', user.uid);
+            const userRef = doc(db, 'User', user.uid);
     
             await setDoc(userRef, {
                 username: displayName,

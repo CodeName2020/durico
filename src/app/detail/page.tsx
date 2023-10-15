@@ -12,6 +12,7 @@ const Detail = () => {
     }, [router,])
     return (
         <div className='flex min-h-screen flex-col items-center space-y-6 p-6'>
+            detail
         </div>
     )
 }
