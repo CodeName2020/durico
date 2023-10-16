@@ -5,13 +5,13 @@ import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyACtdmk0_ogGlOdgjW2ObrGCm_FIF1nvxU",
-  authDomain: "durico-web.firebaseapp.com",
-  projectId: "durico-web",
-  storageBucket: "durico-web.appspot.com",
-  messagingSenderId: "529669283956",
-  appId: "1:529669283956:web:6541f80cd54b9ac17bb121",
-  measurementId: "G-Q7TDYCLCBP"
+  apiKey: "AIzaSyAOcDDIIMXwWB0RbwnvheunKCKrfKj2R2M",
+  authDomain: "demoduri.firebaseapp.com",
+  projectId: "demoduri",
+  storageBucket: "demoduri.appspot.com",
+  messagingSenderId: "708616521913",
+  appId: "1:708616521913:web:8fd535719cbd1f22e2f368",
+  measurementId: "G-5B2YDXSDJ8"
 };
 
 const app = initializeApp(firebaseConfig);

@@ -82,8 +82,6 @@ const Register = () => {
         try {
             const userCredential = await signInWithPopup(auth, googleProvider);
             const user = userCredential.user;
-    
-            // Additional information from Google sign-in
             const displayName = user.displayName;
             const photoURL = user.photoURL;
             const email = user.email;
