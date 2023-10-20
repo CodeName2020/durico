@@ -13,8 +13,12 @@ type Props = {
 
 const PageDetail = ({ params }: Props) => {
     const dbRef = doc(db, 'Farm', params.id);
-    // const treesCollectionRef = collection(dbRef, 'Tree');
+    const treeRef = collection(db, 'Tree')
     const [farmData, setFarmData] = useState<any | null>(null);
+    const [tree_collected, setTreeCollected] = useState<Number | null>(null)
+    const [tree_ready, setTreeReady] = useState<Number | null>(null)
+    const [tree_notReady, setTreeNotReady] = useState<Number | null>(null)
+    const [tree_data, setTreeData] = useState<any[]>([])
 
     useEffect(() => {
         const getData = async () => {
@@ -28,12 +32,20 @@ const PageDetail = ({ params }: Props) => {
         getData();
     }, [dbRef])
 
+    useEffect(() => {
+        const getTreeData = async () => {
+            const querySnapshot = await getDocs(treeRef);
+            const treedata = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id}))
+            setTreeData(treedata)
+        }
+        getTreeData();
+    }, [treeRef])
+
     if (!farmData) {
         return <div>Loading...</div>;
     }
 
     const pollinationDate = farmData.farm_pollination_date ? farmData.farm_pollination_date.toDate() : null;
-
     const monthNames = [
         'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
         'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
@@ -57,19 +69,23 @@ const PageDetail = ({ params }: Props) => {
     const addTreeInfo = async () => {
         const treeData = {
             farm_id: params.id,
-            tree_collected: 5,
-            tree_ready: 5,
-            tree_notReady: 5,
+            tree_collected: tree_collected,
+            tree_ready: tree_ready,
+            tree_notReady: tree_notReady,
             created_at: serverTimestamp()
         };
 
         try {
             const treeRef = await addDoc(collection(db, 'Tree'), treeData);
             console.log("Tree added with ID: ", treeRef.id);
+            setTreeCollected(null);
+            setTreeReady(null);
+            setTreeNotReady(null);
         } catch (error) {
             console.error("Error adding tree: ", error);
         }
     }
+    
 
     return (
         <div className='flex min-h-screen flex-col items-center space-y-8 p-4'>
@@ -85,12 +101,20 @@ const PageDetail = ({ params }: Props) => {
                     <div className='inline-flex w-full'>
                         สถานะ: <div style={{ color: farmData.farm_status ? '#22c55e' : '#e11d48' }}>{farmData.farm_status ? 'พร้อมที่จะทำการเก็บเกี่ยวแล้ว' : 'ยังไม่พร้อมให้เก็บเกี่ยว'}</div>
                     </div>
-                    {/* <div style={{ color: farmData.farm_status ? '#22c55e' : '#e11d48' }}>
-                        สถานะ: {farmData.farm_status ? 'พร้อมที่จะทำการเก็บเกี่ยวแล้ว' : 'ยังไม่พร้อมให้เก็บเกี่ยว'}
-                    </div> */}
                 </div>
                 <div>
                     <img src={farmData.farm_photo} alt="Farm Photo" />
+                </div>
+                <div className='font-medium'>
+                    {tree_data.map((data) => {
+                        return (
+                            <div key={data.id}>
+                                <div>เก็บแล้ว {data.tree_collected} ลูก</div>
+                                <div>พร้อมที่จะเก็บ {data.tree_ready} ลูก</div>
+                                <div>ยังไม่พร้อมที่จะเก็บ {data.tree_notReady} ลูก</div>
+                            </div>
+                        )
+                    })}
                 </div>
                 <div>
                     {formattedDate && <div>ผสมเกสรเมื่อ {formattedDate}</div>}
@@ -114,18 +138,35 @@ const PageDetail = ({ params }: Props) => {
                     </div>
                 </div>
             </div>
-            
+
             {farmData.farm_tree && (
                 <div className='grid grid-cols-6'>
                     {generateTreeList(farmData.farm_tree)}
                 </div>
             )}
 
-            <div className="tooltip" data-tip="hello">
+            {/* <div className="tooltip" data-tip="hello">
                 <button className="btn">Hover me</button>
-            </div>
-            
-            <div>
+            </div> */}
+
+            <div className='space-y-2'>
+                <div className='space-y-2'>
+                    <input type="number" placeholder='Collected amount'
+                        className="input input-bordered input-primary w-full max-w-xs col-span-2"
+                        value={tree_collected?.toString() || ''}
+                        onChange={even => setTreeCollected(Number(even.target.value))}
+                    />
+                    <input type="number" placeholder='Collected amount'
+                        className="input input-bordered input-primary w-full max-w-xs col-span-2"
+                        value={tree_ready?.toString() || ''}
+                        onChange={even => setTreeReady(Number(even.target.value))}
+                    />
+                    <input type="number" placeholder='Collected amount' 
+                        className="input input-bordered input-primary w-full max-w-xs col-span-2"
+                        value={tree_notReady?.toString() || ''}
+                        onChange={even => setTreeNotReady(Number(even.target.value))}
+                    />
+                </div>
                 <div>
                     <button onClick={addTreeInfo} className="btn">Button</button>
                 </div>

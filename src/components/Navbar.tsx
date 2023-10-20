@@ -66,6 +66,7 @@ const Navbar = () => {
         console.log(user)
         user.getIdToken().then((idToken) => {
           sessionStorage.setItem('Token', idToken)
+          setUserOr(true);
           router.push('/farm')
           setModalOpen(false);
         })
