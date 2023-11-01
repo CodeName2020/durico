@@ -13,6 +13,7 @@ const Navbar = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen2, setModalOpen2] = useState(false);
   const [checked, setChecked] = useState(false);
   const [userOr, setUserOr] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -111,32 +112,34 @@ const Navbar = () => {
       <LogoSvg />
       <div className='flex flex-col space-y-4'>
         {loggedInUser ? (
-              <div key={loggedInUser.id} className='btn btn-primary text-white rounded-3xl px-1'>
-                <label htmlFor="my_modal_1">
-                  <div className='mx-2'>
-                    {loggedInUser.username}
-                  </div>
-                </label>
-                <div className='dropdown dropdown-end'>
-                  <div>
-                    <label tabIndex={0}>
-                      {loggedInUser.user_img && (
-                        <img src={loggedInUser.user_img} alt="Uploaded Farm Photo" className='w-[38px] h-[38px] rounded-full ring ring-primary ring-offset-base-100 ring-offset-2' />
-                      )}
-                    </label>
-                  </div>
-                  <ul tabIndex={0} className="menu menu-sm dropdown-content mt-4 z-[1] p-2 shadow bg-base-100 rounded-box w-52 text-black font-light normal-case">
-                    <li>
-                      <a className="justify-between">
-                        Profile
-                        <span className="badge">New</span>
-                      </a>
-                    </li>
-                    <li><a>Settings</a></li>
-                    <li onClick={(logout)}><a>Log Out</a></li>
-                  </ul>
-                </div>
+          <div key={loggedInUser.id} className='btn btn-primary text-white rounded-3xl px-1'>
+            <label htmlFor="my_modal_1">
+              <div className='mx-2'>
+                {loggedInUser.username}
               </div>
+            </label>
+            <div className='dropdown dropdown-end'>
+              <div>
+                <label tabIndex={0}>
+                  {loggedInUser.user_img && (
+                    <img src={loggedInUser.user_img} alt="Uploaded Farm Photo" className='w-[38px] h-[38px] rounded-full ring ring-primary ring-offset-base-100 ring-offset-2' />
+                  )}
+                </label>
+              </div>
+              <ul tabIndex={0} className="menu menu-sm dropdown-content mt-4 z-[1] p-2 shadow bg-base-100 rounded-box w-52 text-black font-light normal-case">
+                <li>
+                  <a className="justify-between">
+                    Profile
+                    <span className="badge">New</span>
+                  </a>
+                </li>
+                <li><a>
+                  <label htmlFor="my_modal_3" onClick={() => setModalOpen2(true)}>Settings</label>
+                </a></li>
+                <li onClick={(logout)}><a>Log Out</a></li>
+              </ul>
+            </div>
+          </div>
         ) : (
           <div className='btn btn-primary text-white rounded-3xl px-1'>
             <label htmlFor="my_modal_1">
@@ -174,6 +177,18 @@ const Navbar = () => {
           </div>
           <label className="modal-backdrop" htmlFor="my_modal_1">Close</label>
         </div>
+
+        <input type="checkbox" id='my_modal_3' className='modal-toggle' />
+        {modalOpen2 && (
+          <div className='modal top-[-1rem]'>
+            <div className='modal-box'>
+              <div className='flex flex-col space-y-3'>
+                test modal
+              </div>
+            </div>
+            <label className='modal-backdrop' htmlFor="my_modal_3" onClick={() => setModalOpen2(false)}>Close</label>
+          </div>
+        )}
       </div>
     </div>
   )
